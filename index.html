@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>나라장터 입찰 모니터</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0e1a;--surface:#111827;--surface2:#1a2235;--border:#1e2d45;--accent:#f59e0b;--accent2:#3b82f6;--accent3:#10b981;--danger:#ef4444;--text:#e2e8f0;--muted:#64748b;--mono:'IBM Plex Mono',monospace;--sans:'Noto Sans KR',sans-serif;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);min-height:100vh;line-height:1.5;}
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 32px;display:flex;align-items:center;justify-content:space-between;height:60px;position:sticky;top:0;z-index:100;}
+.logo{display:flex;align-items:center;gap:12px;}
+.logo-badge{background:var(--accent);color:#000;font-family:var(--mono);font-size:11px;font-weight:600;padding:3px 8px;border-radius:3px;letter-spacing:1px;}
+.logo-text{font-size:15px;font-weight:700;}
+.header-right{display:flex;align-items:center;gap:16px;}
+.live-badge{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;color:var(--accent3);}
+.live-dot{width:7px;height:7px;background:var(--accent3);border-radius:50%;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+#now{font-family:var(--mono);font-size:12px;color:var(--muted);}
+.wrap{max-width:1440px;margin:0 auto;padding:24px 32px;display:flex;flex-direction:column;gap:20px;}
+.search-panel{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:20px 24px;}
+.ptitle{font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:2px;text-transform:uppercase;margin-bottom:14px;}
+.key-bar{display:flex;align-items:center;gap:12px;background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.2);border-radius:6px;padding:10px 16px;flex-wrap:wrap;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--border);}
+.key-bar.input-mode{background:transparent;border:none;border-bottom:1px solid var(--border);border-radius:0;padding-left:0;}
+.key-masked{font-family:var(--mono);font-size:13px;color:var(--text);background:var(--bg);padding:4px 12px;border-radius:4px;border:1px solid var(--border);}
+.key-actions{display:flex;gap:8px;margin-left:auto;}
+.btn-sm{border:1px solid var(--border);background:var(--surface2);color:var(--muted);border-radius:4px;padding:4px 14px;font-size:12px;font-family:var(--mono);cursor:pointer;transition:all .15s;}
+.btn-sm:hover{border-color:var(--accent);color:var(--accent);}
+.btn-sm.primary{background:var(--accent);color:#000;border-color:var(--accent);font-weight:700;}
+.edit-row{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;margin-top:10px;}
+.sgrid{display:grid;grid-template-columns:1fr 160px 160px 140px auto;gap:12px;align-items:end;}
+.fg{display:flex;flex-direction:column;gap:6px;}
+.flabel{font-size:11px;color:var(--muted);font-family:var(--mono);letter-spacing:.5px;}
+input,select{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:5px;font-size:13px;font-family:var(--sans);outline:none;transition:border-color .15s;width:100%;}
+input:focus,select:focus{border-color:var(--accent);}
+input::placeholder{color:var(--muted);}
+.btn-s{background:var(--accent);color:#000;border:none;padding:0 24px;border-radius:5px;font-size:13px;font-weight:700;font-family:var(--sans);cursor:pointer;white-space:nowrap;height:38px;transition:opacity .15s;}
+.btn-s:hover{opacity:.85;}.btn-s:disabled{opacity:.5;cursor:not-allowed;}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+.sc{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px 20px;position:relative;overflow:hidden;}
+.sc::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+.sc.s0::before{background:var(--accent3);}.sc.s1::before{background:var(--accent2);}.sc.s2::before{background:var(--accent);}.sc.s3::before{background:var(--danger);}
+.slabel{font-size:11px;color:var(--muted);font-family:var(--mono);letter-spacing:.5px;margin-bottom:8px;}
+.sval{font-size:30px;font-weight:700;font-family:var(--mono);letter-spacing:-1px;}
+.sc.s0 .sval{color:var(--accent3);}.sc.s1 .sval{color:var(--accent2);}.sc.s2 .sval{color:var(--accent);}.sc.s3 .sval{color:var(--danger);}
+.ssub{font-size:11px;color:var(--muted);margin-top:4px;}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+.ph{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;padding:14px 20px;border-bottom:1px solid var(--border);}
+.ptag{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:700;}
+.cnt-badge{font-family:var(--mono);font-size:11px;padding:3px 12px;border-radius:20px;font-weight:700;}
+.cb-bid{background:rgba(59,130,246,.15);color:#60a5fa;border:1px solid rgba(59,130,246,.3);}
+.cb-pre{background:rgba(245,158,11,.15);color:#fbbf24;border:1px solid rgba(245,158,11,.3);}
+.ph-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.ft{background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:3px 12px;font-size:11px;color:var(--muted);cursor:pointer;transition:all .15s;font-family:var(--mono);}
+.ft:hover,.ft.on{border-color:var(--accent);color:var(--accent);background:rgba(245,158,11,.1);}
+.ft-b:hover,.ft-b.on{border-color:var(--accent2);color:#60a5fa;background:rgba(59,130,246,.08);}
+.lb{height:2px;background:var(--border);overflow:hidden;display:none;}
+.lb-inner{height:100%;animation:lbmove 1.4s infinite;}
+@keyframes lbmove{0%{margin-left:-60%;width:60%}100%{margin-left:100%;width:60%}}
+.lb.bid .lb-inner{background:var(--accent2);}.lb.pre .lb-inner{background:var(--accent);}
+.tw{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;}
+th{background:var(--bg);padding:9px 14px;text-align:left;font-size:11px;font-family:var(--mono);color:var(--muted);letter-spacing:.4px;text-transform:uppercase;border-bottom:1px solid var(--border);white-space:nowrap;}
+td{padding:11px 14px;font-size:13px;border-bottom:1px solid var(--border);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tbody tr:hover td{background:var(--surface2);}
+.tc-n{color:var(--muted);font-family:var(--mono);font-size:11px;width:38px;}
+.tc-title a{color:var(--text);font-weight:500;text-decoration:none;}.tc-title a:hover{color:var(--accent);}
+.tc-org{color:var(--muted);font-size:12px;}
+.tc-amt{color:var(--accent);font-family:var(--mono);font-size:12px;text-align:right;white-space:nowrap;}
+.tc-dt{color:var(--muted);font-family:var(--mono);font-size:12px;white-space:nowrap;}
+.badge{display:inline-block;padding:2px 8px;border-radius:3px;font-size:11px;font-family:var(--mono);white-space:nowrap;}
+.bb{background:rgba(59,130,246,.15);color:#60a5fa;border:1px solid rgba(59,130,246,.25);}
+.bg{background:rgba(16,185,129,.15);color:#34d399;border:1px solid rgba(16,185,129,.25);}
+.bo{background:rgba(245,158,11,.15);color:#fbbf24;border:1px solid rgba(245,158,11,.25);}
+.br{background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.25);}
+.bz{background:rgba(100,116,139,.15);color:#94a3b8;border:1px solid rgba(100,116,139,.25);}
+.empty{text-align:center;padding:48px 20px;color:var(--muted);}
+.empty-ico{font-size:34px;margin-bottom:10px;opacity:.3;}
+.empty-title{font-size:14px;}
+.errmsg{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);border-radius:6px;padding:11px 16px;font-size:13px;color:#f87171;margin:12px 20px;font-family:var(--mono);}
+.pager{display:flex;align-items:center;justify-content:center;gap:6px;padding:14px;border-top:1px solid var(--border);}
+.pb{background:var(--surface2);border:1px solid var(--border);color:var(--muted);width:30px;height:30px;border-radius:4px;cursor:pointer;font-family:var(--mono);font-size:12px;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+.pb:hover,.pb.on{border-color:var(--accent);color:var(--accent);}
+.pb.on{background:rgba(245,158,11,.12);}
+.workers-bar{background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.2);border-radius:6px;padding:10px 16px;font-size:12px;color:#34d399;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+@media(max-width:1000px){.sgrid{grid-template-columns:1fr 1fr;}.stats{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:640px){.sgrid{grid-template-columns:1fr;}.wrap{padding:14px;}}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">
+    <span class="logo-badge">G2B</span>
+    <span class="logo-text">나라장터 입찰공고 모니터</span>
+  </div>
+  <div class="header-right">
+    <span class="live-badge"><span class="live-dot"></span>LIVE</span>
+    <span id="now"></span>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- Workers 상태 표시 -->
+  <div class="workers-bar">
+    ✅ <strong>Cloudflare Workers 연동</strong> — 프록시 서버: <code style="background:rgba(0,0,0,.3);padding:2px 8px;border-radius:3px;font-family:var(--mono);font-size:11px;" id="proxy-url-display"></code>
+    &nbsp;
+    <button class="btn-sm" onclick="changeWorkerUrl()" style="margin-left:auto;">✏️ 주소변경</button>
+  </div>
+
+  <!-- SEARCH -->
+  <div class="search-panel">
+    <div class="ptitle">🔑 API 설정 &amp; 검색 조건</div>
+
+    <!-- 서비스키 -->
+    <div id="key-saved-bar" style="display:none;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--border);">
+      <div class="key-bar">
+        <span>🔐</span>
+        <span style="font-size:11px;color:var(--accent3);font-family:var(--mono);">서비스키 저장됨</span>
+        <span class="key-masked" id="key-masked"></span>
+        <div class="key-actions">
+          <button class="btn-sm" onclick="startEditKey()">✏️ 변경</button>
+          <button class="btn-sm" onclick="deleteKey()" style="color:#f87171;">🗑 삭제</button>
+        </div>
+      </div>
+      <div class="edit-row" id="edit-row" style="display:none;">
+        <input type="password" id="key-edit-input" placeholder="새 서비스키 입력...">
+        <button class="btn-sm primary" onclick="saveEditKey()">저장</button>
+        <button class="btn-sm" onclick="cancelEditKey()">취소</button>
+      </div>
+    </div>
+    <div id="key-input-bar" style="margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid var(--border);">
+      <div style="display:grid;grid-template-columns:1fr auto;gap:12px;align-items:end;">
+        <div class="fg">
+          <label class="flabel">공공데이터포털 서비스키 (필수)</label>
+          <input type="password" id="key-input" placeholder="URL Decoding 서비스키 입력...">
+        </div>
+        <button class="btn-sm primary" onclick="saveKey()" style="height:38px;padding:0 20px;">💾 저장</button>
+      </div>
+    </div>
+
+    <div style="margin-bottom:14px;">
+      <div class="fg" style="max-width:200px;">
+        <label class="flabel">검색 기간</label>
+        <select id="dayRange">
+          <option value="3">최근 3일</option>
+          <option value="7">최근 7일</option>
+          <option value="10" selected>최근 10일</option>
+          <option value="14">최근 14일</option>
+          <option value="30">최근 30일</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="sgrid">
+      <div class="fg">
+        <label class="flabel">검색 키워드 (공고명)</label>
+        <input type="text" id="keyword" placeholder="예: 소프트웨어, AI, 유지보수...">
+      </div>
+      <div class="fg">
+        <label class="flabel">분류</label>
+        <select id="bidType">
+          <option value="">전체</option>
+          <option value="물품">물품</option>
+          <option value="용역">용역</option>
+          <option value="공사">공사</option>
+          <option value="외자">외자</option>
+        </select>
+      </div>
+      <div class="fg">
+        <label class="flabel">조회 건수</label>
+        <select id="numRows">
+          <option value="20">20건</option>
+          <option value="50" selected>50건</option>
+          <option value="100">100건</option>
+        </select>
+      </div>
+      <button class="btn-s" id="searchBtn" onclick="runSearch()">🔍 동시 조회</button>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats">
+    <div class="sc s0"><div class="slabel">TOTAL</div><div class="sval" id="sv0">—</div><div class="ssub">입찰 + 사전규격</div></div>
+    <div class="sc s1"><div class="slabel">📋 입찰공고</div><div class="sval" id="sv1">—</div><div class="ssub">BidPublicInfoService04</div></div>
+    <div class="sc s2"><div class="slabel">📄 사전규격공고</div><div class="sval" id="sv2">—</div><div class="ssub">BefBidPublicInfoService02</div></div>
+    <div class="sc s3"><div class="slabel">⚡ D-3 이내 마감</div><div class="sval" id="sv3">—</div><div class="ssub">긴급 입찰 건수</div></div>
+  </div>
+
+  <!-- 입찰공고 -->
+  <div class="panel">
+    <div class="ph">
+      <div class="ptag">📋 입찰공고 <span class="cnt-badge cb-bid" id="cnt-bid">0 건</span></div>
+      <div class="ph-right">
+        <span style="font-size:11px;color:var(--muted);font-family:var(--mono)">분류:</span>
+        <span class="ft on" id="bf0" onclick="filterBid('')">전체</span>
+        <span class="ft" id="bf1" onclick="filterBid('물품')">물품</span>
+        <span class="ft" id="bf2" onclick="filterBid('용역')">용역</span>
+        <span class="ft" id="bf3" onclick="filterBid('공사')">공사</span>
+      </div>
+    </div>
+    <div class="lb bid" id="lb-bid"><div class="lb-inner"></div></div>
+    <div id="err-bid"></div>
+    <div class="tw"><table>
+      <thead><tr><th>#</th><th>공고명</th><th>발주기관</th><th>분류</th><th style="text-align:right">추정금액</th><th>공고일</th><th>입찰마감</th><th>D-Day</th></tr></thead>
+      <tbody id="bid-body"><tr><td colspan="8"><div class="empty"><div class="empty-ico">📭</div><div class="empty-title">서비스키와 키워드를 입력 후 조회하세요</div></div></td></tr></tbody>
+    </table></div>
+    <div class="pager" id="bid-pager"></div>
+  </div>
+
+  <!-- 사전규격 -->
+  <div class="panel">
+    <div class="ph">
+      <div class="ptag">📄 사전규격공고 <span class="cnt-badge cb-pre" id="cnt-pre">0 건</span></div>
+      <div class="ph-right">
+        <span style="font-size:11px;color:var(--muted);font-family:var(--mono)">분류:</span>
+        <span class="ft ft-b on" id="pf0" onclick="filterPre('')">전체</span>
+        <span class="ft ft-b" id="pf1" onclick="filterPre('물품')">물품</span>
+        <span class="ft ft-b" id="pf2" onclick="filterPre('용역')">용역</span>
+        <span class="ft ft-b" id="pf3" onclick="filterPre('공사')">공사</span>
+      </div>
+    </div>
+    <div class="lb pre" id="lb-pre"><div class="lb-inner"></div></div>
+    <div id="err-pre"></div>
+    <div class="tw"><table>
+      <thead><tr><th>#</th><th>공고명</th><th>발주기관</th><th>분류</th><th style="text-align:right">추정금액</th><th>공고일</th><th>의견마감</th><th>D-Day</th></tr></thead>
+      <tbody id="pre-body"><tr><td colspan="8"><div class="empty"><div class="empty-ico">📭</div><div class="empty-title">서비스키와 키워드를 입력 후 조회하세요</div></div></td></tr></tbody>
+    </table></div>
+    <div class="pager" id="pre-pager"></div>
+  </div>
+
+</div>
+
+<script>
+/* ── 설정 ── */
+const WORKER_KEY = 'g2b_worker_url';
+const API_KEY    = 'g2b_api_key';
+const DEFAULT_WORKER = 'https://billowing-salad-86f7.hoon0928.workers.dev';
+const PS = 20;
+
+let AB=[], AP=[], bF='', pF='', bP=1, pP=1;
+
+/* ── 초기화 ── */
+(function init(){
+  if(!localStorage.getItem(WORKER_KEY)) localStorage.setItem(WORKER_KEY, DEFAULT_WORKER);
+  document.getElementById('proxy-url-display').textContent = localStorage.getItem(WORKER_KEY);
+  renderKeyUI();
+})();
+
+/* ── 시계 ── */
+(function tick(){ document.getElementById('now').textContent=new Date().toLocaleString('ko-KR',{hour12:false}); setTimeout(tick,1000); })();
+
+/* ── Workers URL 변경 ── */
+function changeWorkerUrl(){
+  const v = prompt('Cloudflare Workers 주소를 입력하세요:', localStorage.getItem(WORKER_KEY));
+  if(v && v.trim()){
+    localStorage.setItem(WORKER_KEY, v.trim());
+    document.getElementById('proxy-url-display').textContent = v.trim();
+    alert('저장됐습니다!');
+  }
+}
+
+/* ── API Key UI ── */
+function maskKey(k){ return k.length<8?k:k.slice(0,4)+'•'.repeat(Math.min(k.length-8,20))+k.slice(-4); }
+function renderKeyUI(){
+  const k=localStorage.getItem(API_KEY)||'';
+  document.getElementById('key-saved-bar').style.display = k?'block':'none';
+  document.getElementById('key-input-bar').style.display = k?'none':'block';
+  if(k) document.getElementById('key-masked').textContent = maskKey(k);
+}
+function saveKey(){
+  const v=document.getElementById('key-input').value.trim();
+  if(!v){alert('서비스키를 입력하세요.');return;}
+  localStorage.setItem(API_KEY,v);
+  renderKeyUI();
+}
+function startEditKey(){ document.getElementById('edit-row').style.display='grid'; document.getElementById('key-edit-input').focus(); }
+function cancelEditKey(){ document.getElementById('edit-row').style.display='none'; }
+function saveEditKey(){
+  const v=document.getElementById('key-edit-input').value.trim();
+  if(!v){alert('새 서비스키를 입력하세요.');return;}
+  localStorage.setItem(API_KEY,v);
+  document.getElementById('edit-row').style.display='none';
+  renderKeyUI();
+}
+function deleteKey(){
+  if(!confirm('서비스키를 삭제하시겠습니까?'))return;
+  localStorage.removeItem(API_KEY);
+  renderKeyUI();
+}
+
+/* ── 날짜 ── */
+const fmtD=d=>{const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0');return`${y}${m}${dd}`;};
+const dispD=s=>{if(!s)return'—';const c=s.replace(/\D/g,'');return c.length<8?s:`${c.slice(0,4)}.${c.slice(4,6)}.${c.slice(6,8)}`;};
+const dLeft=s=>{if(!s)return null;const c=s.replace(/\D/g,'');if(c.length<8)return null;return Math.ceil((new Date(+c.slice(0,4),+c.slice(4,6)-1,+c.slice(6,8))-new Date())/86400000);};
+
+/* ── 배지 ── */
+const dBadge=s=>{const d=dLeft(s);if(d===null)return'<span class="badge bz">—</span>';if(d<0)return'<span class="badge bz">마감</span>';if(d===0)return'<span class="badge br">D-DAY</span>';if(d<=3)return`<span class="badge br">D-${d}</span>`;if(d<=7)return`<span class="badge bo">D-${d}</span>`;return`<span class="badge bg">D-${d}</span>`;};
+const tBadge=t=>{const m={물품:'bb',용역:'bg',공사:'bo',외자:'br'};return`<span class="badge ${m[t]||'bz'}">${t||'기타'}</span>`;};
+const money=v=>{if(!v||v==='0')return'—';const n=Math.round(parseFloat(v));if(n>=1e8)return`${(n/1e8).toFixed(1)}억`;if(n>=1e4)return`${(n/1e4).toFixed(0)}만`;return n.toLocaleString();};
+const trunc=(s,n)=>s&&s.length>n?s.slice(0,n)+'…':s||'—';
+
+/* ── API 호출 ── */
+const gT=(el,tag)=>{const e=el.querySelector(tag);return e?e.textContent.trim():'';};
+
+async function callWorker(ep, params){
+  const workerBase = localStorage.getItem(WORKER_KEY) || DEFAULT_WORKER;
+  const url = `${workerBase}/proxy?endpoint=${encodeURIComponent(ep)}&${new URLSearchParams(params)}`;
+  const res = await fetch(url, {signal: AbortSignal.timeout(20000)});
+  if(!res.ok){
+    const err = await res.text();
+    throw new Error(`HTTP ${res.status}: ${err.slice(0,200)}`);
+  }
+  const txt = await res.text();
+  const xml = new DOMParser().parseFromString(txt, 'text/xml');
+  if(xml.querySelector('parsererror')) throw new Error('XML 파싱 오류 — API 응답이 올바르지 않습니다');
+  return xml;
+}
+
+async function fetchBid(key,kw,from,to,rows,type){
+  const p={serviceKey:key,numOfRows:rows,pageNo:1,type:'xml',bidNtceNm:kw,bidBeginDt:from};
+  if(type)p.prdctClsfcNoNm=type;
+  const xml=await callWorker('BidPublicInfoService04/getBidPblancListInfoServc',p);
+  return Array.from(xml.querySelectorAll('item')).map(it=>({
+    title:gT(it,'bidNtceNm'), org:gT(it,'dminsttNm')||gT(it,'bidNtceOrgnDeptNm'),
+    type:gT(it,'prdctClsfcNoNm'), amt:gT(it,'asignBdgtAmt')||gT(it,'presmptPrce'),
+    ntceDt:gT(it,'bidNtceDt'), closeDt:gT(it,'bidClseDt'),
+    url:gT(it,'bidNtceUrl')||'https://www.g2b.go.kr',
+  }));
+}
+
+async function fetchPre(key,kw,from,to,rows){
+  const p={serviceKey:key,numOfRows:rows,pageNo:1,type:'xml',bidNtceNm:kw,startDate:from,endDate:to};
+  const xml=await callWorker('BefBidPublicInfoService02/getBefBidPblancListInfoServc',p);
+  return Array.from(xml.querySelectorAll('item')).map(it=>({
+    title:gT(it,'bidNtceNm')||gT(it,'prdctClsfcNoNm'), org:gT(it,'dminsttNm')||gT(it,'bidNtceOrgnDeptNm'),
+    type:gT(it,'prdctClsfcNoNm'), amt:gT(it,'asignBdgtAmt')||gT(it,'presmptPrce')||gT(it,'bfSpecRegstPsbltyAmt'),
+    ntceDt:gT(it,'bidNtceDt')||gT(it,'rcptDt'), closeDt:gT(it,'opninRcptDdlnDt')||gT(it,'bidClseDt'),
+    url:'https://www.g2b.go.kr',
+  }));
+}
+
+/* ── 검색 ── */
+async function runSearch(){
+  const key=localStorage.getItem(API_KEY)||'';
+  const kw=document.getElementById('keyword').value.trim();
+  if(!key){alert('서비스키를 먼저 저장하세요.');return;}
+  if(!kw){alert('키워드를 입력하세요.');return;}
+
+  const btn=document.getElementById('searchBtn');
+  btn.disabled=true; btn.textContent='⏳ 조회중...';
+  AB=[]; AP=[]; bF=''; pF=''; bP=1; pP=1;
+  setLB('bid',true); setLB('pre',true);
+  setErr('bid',''); setErr('pre','');
+  resetFilters();
+
+  const now=new Date();
+  const days=parseInt(document.getElementById('dayRange').value);
+  const from=fmtD(new Date(now-days*86400000));
+  const to=fmtD(now);
+  const rows=document.getElementById('numRows').value;
+  const type=document.getElementById('bidType').value;
+
+  const [r1,r2]=await Promise.allSettled([
+    fetchBid(key,kw,from,to,rows,type),
+    fetchPre(key,kw,from,to,rows),
+  ]);
+
+  setLB('bid',false); setLB('pre',false);
+  btn.disabled=false; btn.textContent='🔍 동시 조회';
+
+  if(r1.status==='fulfilled') AB=r1.value;
+  else setErr('bid','입찰공고 오류: '+r1.reason?.message);
+
+  if(r2.status==='fulfilled') AP=r2.value;
+  else setErr('pre','사전규격 오류: '+r2.reason?.message);
+
+  const urg=AB.filter(r=>{const d=dLeft(r.closeDt);return d!==null&&d>=0&&d<=3;}).length;
+  document.getElementById('sv0').textContent=(AB.length+AP.length).toLocaleString();
+  document.getElementById('sv1').textContent=AB.length.toLocaleString();
+  document.getElementById('sv2').textContent=AP.length.toLocaleString();
+  document.getElementById('sv3').textContent=urg.toLocaleString();
+
+  renderBid(); renderPre();
+}
+
+/* ── 렌더 ── */
+function renderBid(){
+  let data=AB; if(bF)data=data.filter(r=>(r.type||'').includes(bF));
+  document.getElementById('cnt-bid').textContent=`${data.length} 건`;
+  const tbody=document.getElementById('bid-body');
+  if(!data.length){tbody.innerHTML=eRow(8,AB.length?'필터 조건 없음':'검색 결과 없음');document.getElementById('bid-pager').innerHTML='';return;}
+  const tp=Math.ceil(data.length/PS), sl=data.slice((bP-1)*PS,bP*PS);
+  tbody.innerHTML=sl.map((r,i)=>`<tr>
+    <td class="tc-n">${(bP-1)*PS+i+1}</td>
+    <td class="tc-title"><a href="${r.url}" target="_blank">${trunc(r.title,55)}</a></td>
+    <td class="tc-org">${trunc(r.org,22)}</td>
+    <td>${tBadge(r.type)}</td>
+    <td class="tc-amt">${money(r.amt)}</td>
+    <td class="tc-dt">${dispD(r.ntceDt)}</td>
+    <td class="tc-dt">${dispD(r.closeDt)}</td>
+    <td>${dBadge(r.closeDt)}</td>
+  </tr>`).join('');
+  makePager('bid-pager',tp,bP,p=>{bP=p;renderBid();});
+}
+
+function renderPre(){
+  let data=AP; if(pF)data=data.filter(r=>(r.type||'').includes(pF));
+  document.getElementById('cnt-pre').textContent=`${data.length} 건`;
+  const tbody=document.getElementById('pre-body');
+  if(!data.length){tbody.innerHTML=eRow(8,AP.length?'필터 조건 없음':'검색 결과 없음');document.getElementById('pre-pager').innerHTML='';return;}
+  const tp=Math.ceil(data.length/PS), sl=data.slice((pP-1)*PS,pP*PS);
+  tbody.innerHTML=sl.map((r,i)=>`<tr>
+    <td class="tc-n">${(pP-1)*PS+i+1}</td>
+    <td class="tc-title"><a href="${r.url}" target="_blank">${trunc(r.title,55)}</a></td>
+    <td class="tc-org">${trunc(r.org,22)}</td>
+    <td>${tBadge(r.type)}</td>
+    <td class="tc-amt">${money(r.amt)}</td>
+    <td class="tc-dt">${dispD(r.ntceDt)}</td>
+    <td class="tc-dt">${dispD(r.closeDt)}</td>
+    <td>${dBadge(r.closeDt)}</td>
+  </tr>`).join('');
+  makePager('pre-pager',tp,pP,p=>{pP=p;renderPre();});
+}
+
+function filterBid(t){bF=t;bP=1;['bf0','bf1','bf2','bf3'].forEach(id=>document.getElementById(id).classList.remove('on'));const m={'':'bf0','물품':'bf1','용역':'bf2','공사':'bf3'};if(m[t])document.getElementById(m[t]).classList.add('on');renderBid();}
+function filterPre(t){pF=t;pP=1;['pf0','pf1','pf2','pf3'].forEach(id=>document.getElementById(id).classList.remove('on'));const m={'':'pf0','물품':'pf1','용역':'pf2','공사':'pf3'};if(m[t])document.getElementById(m[t]).classList.add('on');renderPre();}
+function resetFilters(){filterBid('');filterPre('');}
+
+function makePager(id,total,cur,cb){
+  const el=document.getElementById(id);
+  if(total<=1){el.innerHTML='';return;}
+  const s=Math.max(1,cur-3),e=Math.min(total,cur+3);
+  const btn=(p,l,on)=>`<button class="pb${on?' on':''}" onclick="(${cb})(${p})">${l}</button>`;
+  let h='';
+  if(s>1)h+=btn(1,1,false);
+  if(s>2)h+=`<span style="color:var(--muted);padding:0 4px">…</span>`;
+  for(let p=s;p<=e;p++)h+=btn(p,p,p===cur);
+  if(e<total-1)h+=`<span style="color:var(--muted);padding:0 4px">…</span>`;
+  if(e<total)h+=btn(total,total,false);
+  el.innerHTML=h;
+}
+
+const eRow=(c,msg)=>`<tr><td colspan="${c}"><div class="empty"><div class="empty-ico">🔍</div><div class="empty-title">${msg}</div></div></td></tr>`;
+function setLB(w,on){document.getElementById(`lb-${w}`).style.display=on?'block':'none';}
+function setErr(w,msg){const el=document.getElementById(`err-${w}`);el.innerHTML=msg?`<div class="errmsg">⚠ ${msg}</div>`:'';;}
+function resetStats(){['sv0','sv1','sv2','sv3'].forEach(id=>{document.getElementById(id).textContent='…';});}
+
+document.addEventListener('keydown',e=>{if(e.key==='Enter')runSearch();});
+</script>
+</body>
+</html>
